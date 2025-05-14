@@ -23,9 +23,8 @@
         android:theme="@style/Theme.WallpaperEditor"
         tools:targetApi="31">
         <activity
-            android:name=".MainActivity"
+            android:name="com.martinho.wallpapereditor.MainActivity"
             android:exported="true"
-            android:label="@string/app_name"
             android:theme="@style/Theme.WallpaperEditor">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

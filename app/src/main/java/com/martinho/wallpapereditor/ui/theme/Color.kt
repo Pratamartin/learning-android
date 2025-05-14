@@ -1,4 +1,4 @@
-package com.example.wallpapereditor.ui.theme
+package com.martinho.wallpapereditor.ui.theme
 
 import androidx.compose.ui.graphics.Color
 

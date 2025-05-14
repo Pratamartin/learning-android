@@ -1,4 +1,4 @@
-package com.example.wallpapereditor.ui.theme
+package com.martinho.wallpapereditor.ui.theme
 
 import android.app.Activity
 import android.os.Build
