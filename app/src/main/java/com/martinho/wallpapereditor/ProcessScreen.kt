@@ -24,6 +24,7 @@ import kotlinx.coroutines.launch
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.dp
 
+
 @Composable
 fun ProcessScreen(onNavigateToImageView: () -> Unit) {
     val context = LocalContext.current
@@ -33,12 +34,26 @@ fun ProcessScreen(onNavigateToImageView: () -> Unit) {
     LaunchedEffect(Unit) {
         coroutineScope.launch {
             val uri = TempDataHolder.selectedImageUri
-            val original = uri?.let {
+            val logoRes = TempDataHolder.logoResId
+
+            val originalBitmap = uri?.let {
                 context.contentResolver.openInputStream(it)?.use { stream ->
                     BitmapFactory.decodeStream(stream)
                 }
             }
-            TempDataHolder.generatedImage = original
+
+            val resizedImage = originalBitmap?.let { resizeImage(context, it) }
+
+            val logoRaw = logoRes?.let {
+                BitmapFactory.decodeResource(context.resources, it)
+            }
+
+            val resizedLogo = logoRaw?.let { resizeLogo(context, it) }
+
+            TempDataHolder.generatedImage = resizedImage
+            TempDataHolder.logoBitmap = resizedLogo
+            TempDataHolder.defaultOffset = resizedLogo?.let { getDefaultLogoOffset(context, it) }
+
             isProcessing = false
             onNavigateToImageView()
         }
@@ -56,6 +71,8 @@ fun ProcessScreen(onNavigateToImageView: () -> Unit) {
         }
     }
 }
+
+
 
 @Composable
 fun LoadingSpinnerComposable() {

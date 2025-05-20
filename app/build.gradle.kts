@@ -50,7 +50,6 @@ dependencies {
     implementation("androidx.compose.foundation:foundation:1.5.3")
     implementation("androidx.compose.material3:material3:1.1.2")
 
-    // ✅ Corrigido:
     implementation("androidx.navigation:navigation-compose:2.7.7")
 
     testImplementation("junit:junit:4.13.2")
