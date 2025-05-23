@@ -7,7 +7,7 @@ import androidx.compose.ui.geometry.Offset
 object TempDataHolder {
     var logoResId: Int? = null
     var logoBitmap: Bitmap? = null
-    var selectedImageUri: Uri? = null
-    var generatedImage: Bitmap? = null
-    var defaultOffset: Offset? = null
+    var selectedImageUris: List<Uri> = emptyList()
+    var generatedImages: List<Bitmap> = emptyList()
+    var offsets: MutableList<Offset> = mutableListOf()
 }

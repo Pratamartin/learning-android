@@ -33,16 +33,14 @@ fun ProcessScreen(onNavigateToImageView: () -> Unit) {
 
     LaunchedEffect(Unit) {
         coroutineScope.launch {
-            val uri = TempDataHolder.selectedImageUri
+            val uris = TempDataHolder.selectedImageUris
             val logoRes = TempDataHolder.logoResId
 
-            val originalBitmap = uri?.let {
-                context.contentResolver.openInputStream(it)?.use { stream ->
-                    BitmapFactory.decodeStream(stream)
+            val resizedImages = uris.mapNotNull { uri ->
+                context.contentResolver.openInputStream(uri)?.use { stream ->
+                    BitmapFactory.decodeStream(stream)?.let { resizeImage(context, it) }
                 }
             }
-
-            val resizedImage = originalBitmap?.let { resizeImage(context, it) }
 
             val logoRaw = logoRes?.let {
                 BitmapFactory.decodeResource(context.resources, it)
@@ -50,9 +48,11 @@ fun ProcessScreen(onNavigateToImageView: () -> Unit) {
 
             val resizedLogo = logoRaw?.let { resizeLogo(context, it) }
 
-            TempDataHolder.generatedImage = resizedImage
+            TempDataHolder.generatedImages = resizedImages
             TempDataHolder.logoBitmap = resizedLogo
-            TempDataHolder.defaultOffset = resizedLogo?.let { getDefaultLogoOffset(context, it) }
+            TempDataHolder.offsets = List(resizedImages.size) {
+                resizedLogo?.let { getDefaultLogoOffset(context, it) } ?: Offset(100f, 100f)
+            }.toMutableList()
 
             isProcessing = false
             onNavigateToImageView()
@@ -67,11 +67,10 @@ fun ProcessScreen(onNavigateToImageView: () -> Unit) {
         ) {
             LoadingSpinnerComposable()
             Spacer(modifier = Modifier.height(12.dp))
-            Text("Generating preview...")
+            Text("Processando imagens...")
         }
     }
 }
-
 
 
 @Composable

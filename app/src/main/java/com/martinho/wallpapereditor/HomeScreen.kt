@@ -17,11 +17,10 @@ fun HomeScreen(onNavigateToProcess: () -> Unit) {
     val context = LocalContext.current
 
     val launcher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri ->
-        if (uri != null && TempDataHolder.logoResId != null) {
-            TempDataHolder.selectedImageUri = uri
-            // O logo será carregado e redimensionado no ProcessScreen
+        contract = ActivityResultContracts.GetMultipleContents()
+    ) { uris ->
+        if (uris.isNotEmpty() && TempDataHolder.logoResId != null) {
+            TempDataHolder.selectedImageUris = uris
             onNavigateToProcess()
         }
     }
