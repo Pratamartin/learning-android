@@ -11,6 +11,7 @@ import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountBox
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Create
 import androidx.compose.material.icons.filled.Done
@@ -29,13 +30,14 @@ import com.google.accompanist.pager.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalPagerApi::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalPagerApi::class)
 @Composable
 fun ImageViewScreen() {
     val context = LocalContext.current
     val images = TempDataHolder.generatedImages
     val logoBitmap = TempDataHolder.logoBitmap
     val offsets = remember { TempDataHolder.offsets.toMutableStateList() }
+    val initialOffsets = remember { offsets.toList() } // Salva a posição inicial para rollback
 
     if (images.isEmpty() || logoBitmap == null) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -96,6 +98,7 @@ fun ImageViewScreen() {
                                 }
                             } else Modifier
                         )
+                        .size(100.dp)
                 )
 
                 Text(
@@ -107,50 +110,62 @@ fun ImageViewScreen() {
                         .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(8.dp))
                         .padding(horizontal = 12.dp, vertical = 6.dp)
                 )
-            }
-        }
 
-        // Botões flutuantes
-        Column(
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(16.dp),
-            horizontalAlignment = Alignment.End
-        ) {
-            AnimatedVisibility(visible = showOptions) {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    FloatingActionButton(onClick = { isEditing = !isEditing }) {
-                        Icon(Icons.Default.Edit, contentDescription = "Editar")
+                // Botões flutuantes
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(16.dp),
+                    horizontalAlignment = Alignment.End
+                ) {
+                    AnimatedVisibility(visible = showOptions) {
+                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            FloatingActionButton(onClick = { isEditing = !isEditing }) {
+                                Icon(Icons.Default.Edit, contentDescription = "Editar")
+                            }
+
+                            FloatingActionButton(onClick = {
+                                val originalOffset = initialOffsets[page]
+
+                                // 1️⃣ Atualiza a lista principal
+                                offsets[page] = originalOffset
+
+                                // 2️⃣ Atualiza a variável visível
+                                offset.value = originalOffset
+
+                                // 3️⃣ Aplica o wallpaper
+                                val result = mergeStickerOnImage(image, logoBitmap, originalOffset)
+                                WallpaperManager.getInstance(context).setBitmap(result)
+                                Toast.makeText(
+                                    context,
+                                    "Wallpaper aplicado na posição original!",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }) {
+                                Icon(Icons.Default.AccountBox, contentDescription = "Rollback + Aplicar")
+                            }
+
+                            FloatingActionButton(onClick = {
+                                val currentOffset = offset.value
+                                val result = mergeStickerOnImage(image, logoBitmap, currentOffset)
+                                saveImageToGallery(context, result)
+                                Toast.makeText(context, "Imagem salva!", Toast.LENGTH_SHORT).show()
+                            }) {
+                                Icon(Icons.Default.Done, contentDescription = "Salvar")
+                            }
+                        }
                     }
+
                     FloatingActionButton(onClick = {
-                        val img = images[pagerState.currentPage]
-                        val offset = offsets[pagerState.currentPage]
-                        val result = mergeStickerOnImage(img, logoBitmap, offset)
-                        saveImageToGallery(context, result)
-                        Toast.makeText(context, "Imagem salva!", Toast.LENGTH_SHORT).show()
+                        showOptions = !showOptions
+                        if (showOptions) triggerControlsVisibility()
                     }) {
-                        Icon(Icons.Default.Done, contentDescription = "Salvar")
-                    }
-                    FloatingActionButton(onClick = {
-                        val img = images[pagerState.currentPage]
-                        val offset = offsets[pagerState.currentPage]
-                        val result = mergeStickerOnImage(img, logoBitmap, offset)
-                        WallpaperManager.getInstance(context).setBitmap(result)
-                        Toast.makeText(context, "Wallpaper aplicado!", Toast.LENGTH_SHORT).show()
-                    }) {
-                        Icon(Icons.Default.Create, contentDescription = "Aplicar")
+                        Icon(
+                            imageVector = if (showOptions) Icons.Default.Close else Icons.Default.Edit,
+                            contentDescription = "Menu"
+                        )
                     }
                 }
-            }
-
-            FloatingActionButton(onClick = {
-                showOptions = !showOptions
-                if (showOptions) triggerControlsVisibility()
-            }) {
-                Icon(
-                    imageVector = if (showOptions) Icons.Default.Close else Icons.Default.Edit,
-                    contentDescription = "Menu"
-                )
             }
         }
 
