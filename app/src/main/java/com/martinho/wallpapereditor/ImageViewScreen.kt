@@ -3,7 +3,6 @@ package com.martinho.wallpapereditor
 import android.app.WallpaperManager
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -13,7 +12,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBox
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Create
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
@@ -22,15 +20,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.graphicsLayer
 import com.google.accompanist.pager.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.platform.LocalDensity
 
 @OptIn(ExperimentalPagerApi::class)
 @Composable
@@ -58,6 +58,10 @@ fun ImageViewScreen() {
     val coroutineScope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     val showCheck = remember { mutableStateOf(false) }
+    val density = LocalDensity.current
+
+    // Controla se o diálogo para edição manual está visível
+    var showPositionDialog by remember { mutableStateOf(false) }
 
     fun triggerControlsVisibility() {
         showOptions = true
@@ -89,7 +93,6 @@ fun ImageViewScreen() {
                     modifier = Modifier.fillMaxSize()
                 )
 
-                val density = LocalDensity.current
                 val shadowElevationPx = with(density) { if (isDragging.value) 8.dp.toPx() else 0f }
 
                 Image(
@@ -141,6 +144,10 @@ fun ImageViewScreen() {
                                 Icon(Icons.Default.Edit, contentDescription = "Editar")
                             }
 
+                            FloatingActionButton(onClick = { showPositionDialog = true }) {
+                                Icon(Icons.Default.Edit, contentDescription = "Ajustar Posição Manualmente")
+                            }
+
                             FloatingActionButton(onClick = {
                                 val originalOffset = initialOffsets[page]
                                 offsets[page] = originalOffset
@@ -183,6 +190,49 @@ fun ImageViewScreen() {
                         )
                     }
                 }
+
+                // Diálogo para edição manual
+                if (showPositionDialog) {
+                    var xInput by remember { mutableStateOf(offset.value.x.toInt().toString()) }
+                    var yInput by remember { mutableStateOf(offset.value.y.toInt().toString()) }
+
+                    AlertDialog(
+                        onDismissRequest = { showPositionDialog = false },
+                        confirmButton = {
+                            TextButton(onClick = {
+                                val newX = xInput.toFloatOrNull() ?: offset.value.x
+                                val newY = yInput.toFloatOrNull() ?: offset.value.y
+                                offset.value = Offset(newX, newY)
+                                offsets[page] = offset.value
+                                showPositionDialog = false
+                            }) {
+                                Text("Aplicar")
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showPositionDialog = false }) {
+                                Text("Cancelar")
+                            }
+                        },
+                        title = { Text("Ajustar posição do sticker") },
+                        text = {
+                            Column {
+                                OutlinedTextField(
+                                    value = xInput,
+                                    onValueChange = { xInput = it },
+                                    label = { Text("Posição X") },
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                                OutlinedTextField(
+                                    value = yInput,
+                                    onValueChange = { yInput = it },
+                                    label = { Text("Posição Y") },
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
+                        }
+                    )
+                }
             }
         }
 
@@ -193,7 +243,6 @@ fun ImageViewScreen() {
                 .padding(bottom = 12.dp)
         )
 
-        // Ícone de check quando salva
         AnimatedVisibility(
             visible = showCheck.value,
             modifier = Modifier.align(Alignment.Center)
@@ -206,7 +255,6 @@ fun ImageViewScreen() {
             )
         }
 
-        // Snackbar
         SnackbarHost(
             hostState = snackbarHostState,
             modifier = Modifier
