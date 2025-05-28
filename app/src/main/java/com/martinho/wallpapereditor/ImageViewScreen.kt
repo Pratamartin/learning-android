@@ -2,12 +2,15 @@ package com.martinho.wallpapereditor
 
 import android.app.WallpaperManager
 import android.widget.Toast
-import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBox
@@ -18,21 +21,20 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.graphicsLayer
-import com.google.accompanist.pager.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.platform.LocalDensity
 
-@OptIn(ExperimentalPagerApi::class)
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ImageViewScreen() {
     val context = LocalContext.current
@@ -44,7 +46,7 @@ fun ImageViewScreen() {
     if (images.isEmpty() || logoBitmap == null) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                LoadingSpinnerComposable()
+                CircularProgressIndicator()
                 Spacer(modifier = Modifier.height(8.dp))
                 Text("Carregando imagens...")
             }
@@ -52,15 +54,13 @@ fun ImageViewScreen() {
         return
     }
 
-    val pagerState = rememberPagerState()
+    val pagerState = rememberPagerState(initialPage = 0, pageCount = { images.size })
     var isEditing by remember { mutableStateOf(false) }
     var showOptions by remember { mutableStateOf(true) }
     val coroutineScope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     val showCheck = remember { mutableStateOf(false) }
     val density = LocalDensity.current
-
-    // Controla se o diálogo para edição manual está visível
     var showPositionDialog by remember { mutableStateOf(false) }
 
     fun triggerControlsVisibility() {
@@ -77,7 +77,7 @@ fun ImageViewScreen() {
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        HorizontalPager(count = images.size, state = pagerState) { page ->
+        HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize()) { page ->
             val image = images[page]
             val offset = remember { mutableStateOf(offsets[page]) }
             val isDragging = remember { mutableStateOf(false) }
@@ -138,7 +138,7 @@ fun ImageViewScreen() {
                         .padding(16.dp),
                     horizontalAlignment = Alignment.End
                 ) {
-                    AnimatedVisibility(visible = showOptions) {
+                    if (showOptions) {
                         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             FloatingActionButton(onClick = { isEditing = !isEditing }) {
                                 Icon(Icons.Default.Edit, contentDescription = "Editar")
@@ -191,7 +191,6 @@ fun ImageViewScreen() {
                     }
                 }
 
-                // Diálogo para edição manual
                 if (showPositionDialog) {
                     var xInput by remember { mutableStateOf(offset.value.x.toInt().toString()) }
                     var yInput by remember { mutableStateOf(offset.value.y.toInt().toString()) }
@@ -236,22 +235,32 @@ fun ImageViewScreen() {
             }
         }
 
-        HorizontalPagerIndicator(
-            pagerState = pagerState,
+        Row(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 12.dp)
-        )
-
-        AnimatedVisibility(
-            visible = showCheck.value,
-            modifier = Modifier.align(Alignment.Center)
+                .padding(bottom = 12.dp),
+            horizontalArrangement = Arrangement.Center
         ) {
+            repeat(pagerState.pageCount) { index ->
+                val color = if (pagerState.currentPage == index) Color.DarkGray else Color.LightGray
+                Box(
+                    modifier = Modifier
+                        .padding(2.dp)
+                        .clip(CircleShape)
+                        .background(color)
+                        .size(12.dp)
+                )
+            }
+        }
+
+        if (showCheck.value) {
             Icon(
                 imageVector = Icons.Default.Done,
                 contentDescription = "Check",
                 tint = Color.Green,
-                modifier = Modifier.size(80.dp)
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .size(80.dp)
             )
         }
 

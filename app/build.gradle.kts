@@ -56,10 +56,6 @@ dependencies {
     // Navigation
     implementation("androidx.navigation:navigation-compose:2.7.7")
 
-    // Accompanist Pager (compatível com Compose 1.6+)
-    implementation("com.google.accompanist:accompanist-pager:0.35.0-alpha")
-    implementation("com.google.accompanist:accompanist-pager-indicators:0.35.0-alpha")
-
     // Tests
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
